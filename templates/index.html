@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF to Image Converter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #drop-zone {
+      border: 2px dashed #007bff;
+      padding: 50px;
+      margin: 20px auto;
+      width: 300px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #drop-zone.hover {
+      background-color: #e0f7fa;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    #output {
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #007bff;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>PDF to Image Converter</h1>
+  <div id="drop-zone">Drag & Drop your PDF here or click to upload</div>
+  <input type="file" id="fileInput" accept=".pdf">
+  <div id="output"></div>
+  <script>
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("fileInput");
+    const output = document.getElementById("output");
+
+    // Trigger file selection when clicking the drop zone
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    // Highlight the drop zone when a file is dragged over it
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("hover");
+    });
+
+    // Remove highlight when the dragged file leaves the drop zone
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("hover"));
+
+    // Handle file drop
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("hover");
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        uploadFile(file);
+      }
+    });
+
+    // Handle file selection via the input element
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        uploadFile(file);
+      }
+    });
+
+    function uploadFile(file) {
+      if (file.type !== "application/pdf") {
+        output.textContent = "Please upload a valid PDF file.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("pdf", file);
+
+      output.textContent = "Uploading and processing your file...";
+
+      fetch("/upload", {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to process the file.");
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "images.zip";
+          a.click();
+          window.URL.revokeObjectURL(url);
+          output.textContent = "Download complete!";
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          output.textContent = "Error processing the file. Please try again.";
+        });
+    }
+  </script>
+</body>
+</html>
